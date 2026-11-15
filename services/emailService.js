@@ -46,20 +46,16 @@ async function sendWelcomeEmail(email, pnr) {
                     Examples:
                 </p>
 
-                <ul>
-                    <li>WL → RAC</li>
-                    <li>RAC → CNF</li>
-                    <li>Seat Allocation Changes</li>
-                </ul>
+               
 
                 <p>
-                    Thank you for using Rail Mentor.
+                    Thank you for using Rail Mentor 
                 </p>
 
                 <hr>
 
                 <p style="font-size:12px;color:#666;">
-                    © 2026 Rail Mentor
+                   Sanket Phadtare © 2026 Rail Mentor
                 </p>
 
             </div>
@@ -128,7 +124,7 @@ async function sendStatusChangeEmail(
                 <hr>
 
                 <p style="font-size:12px;color:#666;">
-                    © 2026 Rail Mentor
+                    Sanket Phadtare © 2026 Rail Mentor
                 </p>
 
             </div>

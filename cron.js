@@ -1,78 +1,139 @@
 require("dotenv").config();
 
-console.log("Cron Service Started");
-
 const cron = require("node-cron");
-const pool = require("./db");
+const { Pool } = require("pg");
 
 const {
     sendStatusChangeEmail
 } = require("./services/emailService");
 
-const {
-    fetchPNR
-} = require("./services/pnrService");
+console.log("================================");
+console.log("Cron Service Started");
+console.log("================================");
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
 cron.schedule("*/5 * * * *", async () => {
 
+    console.log("--------------------------------");
     console.log(
-        "Checking PNR updates..."
+        `Checking PNR Updates : ${new Date().toLocaleString()}`
     );
+    console.log("--------------------------------");
 
     try {
 
-        const result =
-            await pool.query(
-                `
-                SELECT *
-                FROM pnr_tracking
-                WHERE active = true
-                `
-            );
+        const result = await pool.query(`
+            SELECT *
+            FROM pnr_tracking
+            WHERE active = true
+        `);
+
+        console.log(
+            `Tracked Records Found: ${result.rows.length}`
+        );
 
         for (const item of result.rows) {
 
             try {
 
+                console.log("");
+                console.log(
+                    `Checking PNR ${item.pnr}`
+                );
+
+                const response = await fetch(
+                    `https://api.irctc.dev/api/v1/pnr/${item.pnr}`,
+                    {
+                        headers: {
+                            "x-api-key":
+                                process.env.IRCTC_API_KEY,
+                            "accept":
+                                "application/json"
+                        }
+                    }
+                );
+
                 const latestData =
-                    await fetchPNR(
-                        item.pnr
-                    );
+                    await response.json();
 
                 if (
-                    !latestData.success
+                    !latestData.success ||
+                    !latestData.data ||
+                    !latestData.data.passengers ||
+                    latestData.data.passengers.length === 0
                 ) {
+
+                    console.log(
+                        `Could not fetch latest status for ${item.pnr}`
+                    );
+
                     continue;
                 }
 
                 const latestStatus =
-                    latestData
-                    .data
-                    .passengers[0]
-                    .raw;
+                    latestData.data.passengers[0].raw;
+
+                console.log(
+                    "Database Status :",
+                    item.current_status
+                );
+
+                console.log(
+                    "Live API Status :",
+                    latestStatus
+                );
 
                 if (
                     latestStatus !==
                     item.current_status
                 ) {
 
+                    console.log("");
                     console.log(
-                        `Status Changed: ${item.pnr}`
+                        "STATUS CHANGE DETECTED"
                     );
 
-                    await sendStatusChangeEmail(
-                        item.email,
-                        item.pnr,
-                        item.current_status,
-                        latestStatus,
-                        latestData.data.trainName
+                    console.log(
+                        `OLD : ${item.current_status}`
                     );
+
+                    console.log(
+                        `NEW : ${latestStatus}`
+                    );
+
+                    try {
+
+                        await sendStatusChangeEmail(
+                            item.email,
+                            item.pnr,
+                            item.current_status,
+                            latestStatus,
+                            latestData.data.trainName
+                        );
+
+                        console.log(
+                            `Email sent to ${item.email}`
+                        );
+
+                    } catch (emailError) {
+
+                        console.error(
+                            "Email Send Failed:",
+                            emailError.message
+                        );
+                    }
 
                     await pool.query(
                         `
                         UPDATE pnr_tracking
-                        SET current_status=$1
-                        WHERE id=$2
+                        SET current_status = $1
+                        WHERE id = $2
                         `,
                         [
                             latestStatus,
@@ -80,16 +141,19 @@ cron.schedule("*/5 * * * *", async () => {
                         ]
                     );
 
+                    console.log(
+                        "Database Updated"
+                    );
+
                     await pool.query(
                         `
-                        INSERT INTO
-                        pnr_status_history
+                        INSERT INTO pnr_status_history
                         (
                             tracking_id,
                             old_status,
                             new_status
                         )
-                        VALUES($1,$2,$3)
+                        VALUES ($1,$2,$3)
                         `,
                         [
                             item.id,
@@ -99,25 +163,35 @@ cron.schedule("*/5 * * * *", async () => {
                     );
 
                     console.log(
-                        `Email sent to ${item.email}`
+                        "History Saved"
                     );
+
+                } else {
+
+                    console.log(
+                        "No Status Change"
+                    );
+
                 }
 
-            } catch (err) {
+            } catch (pnrError) {
 
                 console.error(
-                    "PNR Error:",
-                    err.message
+                    `PNR ${item.pnr} Error:`,
+                    pnrError.message
                 );
+
             }
+
         }
 
-    } catch (err) {
+    } catch (error) {
 
         console.error(
             "Cron Error:",
-            err.message
+            error.message
         );
+
     }
 
 });
