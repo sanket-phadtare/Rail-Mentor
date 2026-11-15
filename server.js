@@ -1,5 +1,8 @@
 require("dotenv").config();
 
+/* START CRON SERVICE */
+require("./cron");
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -12,7 +15,10 @@ const app = express();
 ========================= */
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 /* =========================
@@ -23,9 +29,11 @@ app.use(cors());
 
 app.use(express.json());
 
-app.use(express.static(
-    path.join(__dirname, "public")
-));
+app.use(
+    express.static(
+        path.join(__dirname, "public")
+    )
+);
 
 /* =========================
    TEST DATABASE
@@ -35,7 +43,7 @@ pool.connect()
     .then(() => {
         console.log("PostgreSQL Connected");
     })
-    .catch(err => {
+    .catch((err) => {
         console.error(
             "Database Connection Error:",
             err.message
@@ -72,7 +80,7 @@ app.get("/api/pnr/:pnr", async (req, res) => {
 
     } catch (error) {
 
-        console.log(error);
+        console.error(error);
 
         res.status(500).json({
             success: false,
@@ -98,7 +106,7 @@ app.post("/api/track", async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message:
-                    "PNR and Email required"
+                    "PNR and Email are required"
             });
 
         }
@@ -123,8 +131,7 @@ app.post("/api/track", async (req, res) => {
 
             return res.status(400).json({
                 success: false,
-                message:
-                    "Invalid PNR"
+                message: "Invalid PNR"
             });
 
         }
@@ -134,6 +141,27 @@ app.post("/api/track", async (req, res) => {
 
         const trainName =
             pnrData.data.trainName;
+
+        const existing =
+            await pool.query(
+                `
+                SELECT *
+                FROM pnr_tracking
+                WHERE pnr=$1
+                AND email=$2
+                `,
+                [pnr, email]
+            );
+
+        if (existing.rows.length > 0) {
+
+            return res.json({
+                success: true,
+                message:
+                    "Tracking already enabled"
+            });
+
+        }
 
         await pool.query(
             `
@@ -174,7 +202,7 @@ app.post("/api/track", async (req, res) => {
 });
 
 /* =========================
-   GET ALL TRACKING
+   GET ALL TRACKING RECORDS
 ========================= */
 
 app.get("/api/tracking", async (req, res) => {
@@ -197,8 +225,11 @@ app.get("/api/tracking", async (req, res) => {
 
     } catch (error) {
 
+        console.error(error);
+
         res.status(500).json({
-            success: false
+            success: false,
+            message: error.message
         });
 
     }
@@ -206,7 +237,7 @@ app.get("/api/tracking", async (req, res) => {
 });
 
 /* =========================
-   HOME PAGE
+   SERVE FRONTEND
 ========================= */
 
 app.get("*", (req, res) => {
@@ -231,7 +262,7 @@ const PORT =
 app.listen(PORT, () => {
 
     console.log(
-        `Rail Mentor running at http://localhost:${PORT}`
+        `Rail Mentor running on port ${PORT}`
     );
 
 });
