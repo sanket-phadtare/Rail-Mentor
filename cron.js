@@ -1,96 +1,123 @@
 require("dotenv").config();
 
+console.log("Cron Service Started");
+
 const cron = require("node-cron");
-
 const pool = require("./db");
-
-const {
-    fetchPNR
-} = require("./services/pnrService");
 
 const {
     sendStatusChangeEmail
 } = require("./services/emailService");
 
-cron.schedule("*/5 * * * *", async ()=>{
+const {
+    fetchPNR
+} = require("./services/pnrService");
 
-    console.log("Checking PNR updates");
+cron.schedule("*/5 * * * *", async () => {
 
-    const result =
-    await pool.query(
-        `SELECT * FROM pnr_tracking
-         WHERE active=true`
+    console.log(
+        "Checking PNR updates..."
     );
 
-    for(const item of result.rows){
+    try {
 
-        try{
+        const result =
+            await pool.query(
+                `
+                SELECT *
+                FROM pnr_tracking
+                WHERE active = true
+                `
+            );
 
-            const latest =
-            await fetchPNR(item.pnr);
+        for (const item of result.rows) {
 
-            const newStatus =
-            latest.data.passengers[0].raw;
+            try {
 
-            if(
-                newStatus !==
-                item.current_status
-            ){
+                const latestData =
+                    await fetchPNR(
+                        item.pnr
+                    );
 
-                await sendStatusChangeEmail(
+                if (
+                    !latestData.success
+                ) {
+                    continue;
+                }
 
-                    item.email,
+                const latestStatus =
+                    latestData
+                    .data
+                    .passengers[0]
+                    .raw;
 
-                    item.pnr,
+                if (
+                    latestStatus !==
+                    item.current_status
+                ) {
 
-                    item.current_status,
+                    console.log(
+                        `Status Changed: ${item.pnr}`
+                    );
 
-                    newStatus
-                );
-
-                await pool.query(
-
-                    `
-                    UPDATE
-                    pnr_tracking
-                    SET current_status=$1
-                    WHERE id=$2
-                    `,
-
-                    [
-                        newStatus,
-                        item.id
-                    ]
-                );
-
-                await pool.query(
-
-                    `
-                    INSERT INTO
-                    pnr_status_history
-                    (
-                        tracking_id,
-                        old_status,
-                        new_status
-                    )
-                    VALUES($1,$2,$3)
-                    `,
-
-                    [
-                        item.id,
+                    await sendStatusChangeEmail(
+                        item.email,
+                        item.pnr,
                         item.current_status,
-                        newStatus
-                    ]
+                        latestStatus,
+                        latestData.data.trainName
+                    );
+
+                    await pool.query(
+                        `
+                        UPDATE pnr_tracking
+                        SET current_status=$1
+                        WHERE id=$2
+                        `,
+                        [
+                            latestStatus,
+                            item.id
+                        ]
+                    );
+
+                    await pool.query(
+                        `
+                        INSERT INTO
+                        pnr_status_history
+                        (
+                            tracking_id,
+                            old_status,
+                            new_status
+                        )
+                        VALUES($1,$2,$3)
+                        `,
+                        [
+                            item.id,
+                            item.current_status,
+                            latestStatus
+                        ]
+                    );
+
+                    console.log(
+                        `Email sent to ${item.email}`
+                    );
+                }
+
+            } catch (err) {
+
+                console.error(
+                    "PNR Error:",
+                    err.message
                 );
-
             }
-
-        }catch(err){
-
-            console.log(err);
-
         }
 
+    } catch (err) {
+
+        console.error(
+            "Cron Error:",
+            err.message
+        );
     }
 
 });
