@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rail Mentor | Smart PNR Tracking</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <div class="brand">
+
+                <img
+                    src="images/rail_mentor_logo.png"
+                    alt="Rail Mentor Logo"
+                    class="logo-image">
+
+                <div class="brand-text">
+
+                    <h1>Rail Mentor</h1>
+
+                    <p>
+                        Smart Railway Information & PNR Tracking Platform
+                    </p>
+
+                </div>
+
+            </div>
+
+        </header>
+
+        <!-- SEARCH CARD -->
+
+        <div class="search-card">
+
+            <div class="search-header">
+
+                <h2>PNR Status & Tracking</h2>
+
+                <p>
+                    Check your current PNR status or enable automatic email alerts.
+                </p>
+
+            </div>
+
+            <div class="form-grid">
+
+                <div class="input-group">
+
+                    <label>
+                        PNR Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="pnr"
+                        maxlength="10"
+                        placeholder="Enter 10-digit PNR Number">
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>
+                        Email Address
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="Enter Email For Alerts">
+
+                </div>
+
+            </div>
+
+            <div class="button-group">
+
+                <button
+                    class="primary-btn"
+                    onclick="checkPNR()">
+
+                    Check Status
+
+                </button>
+
+                <button
+                    class="secondary-btn"
+                    onclick="trackPNR()">
+
+                    Enable Tracking
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- RESULTS -->
+
+        <div id="result"></div>
+
+        <!-- TRACKING INFO -->
+
+        <div class="feature-card">
+
+            <h3>Email Notification Service</h3>
+
+            <ul>
+
+                <li>
+                    Instant email when PNR status changes
+                </li>
+
+                <li>
+                    Tracks WL → RAC → CNF progression
+                </li>
+
+                <li>
+                    Continues monitoring even when website is closed
+                </li>
+
+                <li>
+                    Automatic status history recording
+                </li>
+
+            </ul>
+
+        </div>
+
+        <!-- FUTURE FEATURES -->
+
+        <div class="feature-card">
+
+            <h3>Coming to Rail Mentor</h3>
+
+            <ul>
+
+                <li>Ticket Confirmation Probability</li>
+
+                <li>PNR Status Timeline</li>
+
+                <li>Live Train Running Status</li>
+
+                <li>Platform Prediction</li>
+
+                <li>Journey Assistant</li>
+
+            </ul>
+
+        </div>
+
+        <!-- FOOTER -->
+
+        <footer>
+
+            <div class="footer-content">
+
+                <span>
+                    © 2026 Rail Mentor
+                </span>
+
+                <span class="separator">
+                    |
+                </span>
+
+                <span>
+                    Developed by Sanket Phadtare
+                </span>
+
+            </div>
+
+        </footer>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
