@@ -7,9 +7,9 @@ const {
     sendStatusChangeEmail
 } = require("./services/emailService");
 
-console.log("================================");
+console.log("==================================");
 console.log("Cron Service Started");
-console.log("================================");
+console.log("==================================");
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -20,11 +20,11 @@ const pool = new Pool({
 
 cron.schedule("*/5 * * * *", async () => {
 
-    console.log("--------------------------------");
-    console.log(
-        `Checking PNR Updates : ${new Date().toLocaleString()}`
-    );
-    console.log("--------------------------------");
+    console.log("");
+    console.log("==================================");
+    console.log("Checking PNR Updates...");
+    console.log(new Date().toLocaleString());
+    console.log("==================================");
 
     try {
 
@@ -50,11 +50,10 @@ cron.schedule("*/5 * * * *", async () => {
                 const response = await fetch(
                     `https://api.irctc.dev/api/v1/pnr/${item.pnr}`,
                     {
+                        method: "GET",
                         headers: {
-                            "x-api-key":
-                                process.env.IRCTC_API_KEY,
-                            "accept":
-                                "application/json"
+                            "x-api-key": process.env.IRCTC_API_KEY,
+                            "accept": "application/json"
                         }
                     }
                 );
@@ -76,23 +75,34 @@ cron.schedule("*/5 * * * *", async () => {
                     continue;
                 }
 
-                const latestStatus =
+                /* -----------------------------
+                   STORE OLD & NEW STATUS
+                ----------------------------- */
+
+                const oldStatus =
+                    item.current_status;
+
+                const newStatus =
                     latestData.data.passengers[0].raw;
 
+                const trainName =
+                    latestData.data.trainName;
+
                 console.log(
-                    "Database Status :",
-                    item.current_status
+                    "OLD STATUS:",
+                    oldStatus
                 );
 
                 console.log(
-                    "Live API Status :",
-                    latestStatus
+                    "NEW STATUS:",
+                    newStatus
                 );
 
-                if (
-                    latestStatus !==
-                    item.current_status
-                ) {
+                /* -----------------------------
+                   COMPARE
+                ----------------------------- */
+
+                if (oldStatus !== newStatus) {
 
                     console.log("");
                     console.log(
@@ -100,50 +110,43 @@ cron.schedule("*/5 * * * *", async () => {
                     );
 
                     console.log(
-                        `OLD : ${item.current_status}`
+                        `PREVIOUS STATUS: ${oldStatus}`
                     );
 
                     console.log(
-                        `NEW : ${latestStatus}`
+                        `CURRENT STATUS: ${newStatus}`
                     );
+
+                    /* -----------------------------
+                       SEND EMAIL FIRST
+                    ----------------------------- */
 
                     try {
 
                         await sendStatusChangeEmail(
                             item.email,
                             item.pnr,
-                            item.current_status,
-                            latestStatus,
-                            latestData.data.trainName
+                            oldStatus,
+                            newStatus,
+                            trainName
                         );
 
                         console.log(
-                            `Email sent to ${item.email}`
+                            `Email Sent To ${item.email}`
                         );
 
                     } catch (emailError) {
 
                         console.error(
-                            "Email Send Failed:",
+                            "Email Error:",
                             emailError.message
                         );
+
                     }
 
-                    await pool.query(
-                        `
-                        UPDATE pnr_tracking
-                        SET current_status = $1
-                        WHERE id = $2
-                        `,
-                        [
-                            latestStatus,
-                            item.id
-                        ]
-                    );
-
-                    console.log(
-                        "Database Updated"
-                    );
+                    /* -----------------------------
+                       SAVE HISTORY
+                    ----------------------------- */
 
                     await pool.query(
                         `
@@ -157,13 +160,33 @@ cron.schedule("*/5 * * * *", async () => {
                         `,
                         [
                             item.id,
-                            item.current_status,
-                            latestStatus
+                            oldStatus,
+                            newStatus
                         ]
                     );
 
                     console.log(
                         "History Saved"
+                    );
+
+                    /* -----------------------------
+                       UPDATE DATABASE
+                    ----------------------------- */
+
+                    await pool.query(
+                        `
+                        UPDATE pnr_tracking
+                        SET current_status = $1
+                        WHERE id = $2
+                        `,
+                        [
+                            newStatus,
+                            item.id
+                        ]
+                    );
+
+                    console.log(
+                        "Database Updated"
                     );
 
                 } else {

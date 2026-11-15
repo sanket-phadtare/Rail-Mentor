@@ -4,7 +4,10 @@ const resend = new Resend(
     process.env.RESEND_API_KEY
 );
 
-async function sendWelcomeEmail(email, pnr) {
+async function sendWelcomeEmail(
+    email,
+    pnr
+) {
 
     await resend.emails.send({
 
@@ -15,53 +18,39 @@ async function sendWelcomeEmail(email, pnr) {
         subject: "Rail Mentor Tracking Activated",
 
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+        <div style="font-family:Arial,sans-serif;padding:20px;">
 
-                <h2 style="color:#005baa;">
-                    Welcome to Rail Mentor
-                </h2>
+            <h2 style="color:#005baa;">
+                Welcome to Rail Mentor
+            </h2>
 
-                <p>
-                    Thank you for subscribing to PNR tracking.
-                </p>
+            <p>
+                Thank you for subscribing to PNR tracking.
+            </p>
 
-                <p>
-                    We are now monitoring the following PNR:
-                </p>
+            <p>
+                Your PNR is now being monitored.
+            </p>
 
-                <div style="
-                    background:#f5f7fb;
-                    padding:15px;
-                    border-radius:8px;
-                    margin:15px 0;
-                ">
-                    <strong>PNR:</strong> ${pnr}
-                </div>
+            <p>
+                <strong>PNR Number:</strong>
+                ${pnr}
+            </p>
 
-                <p>
-                    Any changes in your PNR status will be notified instantly via email.
-                </p>
+            <p>
+                Any future changes in ticket status
+                will be sent automatically via email.
+            </p>
 
-                <p>
-                    Examples:
-                </p>
+            <hr>
 
-               
+            <p style="font-size:12px;color:#777;">
+                Sanket Phadtare © 2026 Rail Mentor
+            </p>
 
-                <p>
-                    Thank you for using Rail Mentor 
-                </p>
-
-                <hr>
-
-                <p style="font-size:12px;color:#666;">
-                   Sanket Phadtare © 2026 Rail Mentor
-                </p>
-
-            </div>
+        </div>
         `
     });
-
 }
 
 async function sendStatusChangeEmail(
@@ -72,6 +61,10 @@ async function sendStatusChangeEmail(
     trainName
 ) {
 
+    console.log("EMAIL DATA");
+    console.log("OLD STATUS:", oldStatus);
+    console.log("NEW STATUS:", newStatus);
+
     await resend.emails.send({
 
         from: "Rail Mentor <onboarding@resend.dev>",
@@ -81,53 +74,78 @@ async function sendStatusChangeEmail(
         subject: `PNR Status Updated - ${pnr}`,
 
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+        <div style="font-family:Arial,sans-serif;padding:20px;">
 
-                <h2 style="color:#005baa;">
-                    Rail Mentor Alert
-                </h2>
+            <h2 style="color:#005baa;">
+                Rail Mentor Alert
+            </h2>
 
-                <p>
-                    Your PNR status has changed.
-                </p>
+            <p>
+                Your PNR status has changed.
+            </p>
 
-                <table style="width:100%; border-collapse:collapse;">
+            <table
+                style="
+                    width:100%;
+                    border-collapse:collapse;
+                "
+            >
 
-                    <tr>
-                        <td><strong>Train</strong></td>
-                        <td>${trainName}</td>
-                    </tr>
+                <tr>
+                    <td>
+                        <strong>Train</strong>
+                    </td>
 
-                    <tr>
-                        <td><strong>PNR</strong></td>
-                        <td>${pnr}</td>
-                    </tr>
+                    <td>
+                        ${trainName}
+                    </td>
+                </tr>
 
-                    <tr>
-                        <td><strong>Previous Status</strong></td>
-                        <td>${oldStatus}</td>
-                    </tr>
+                <tr>
+                    <td>
+                        <strong>PNR</strong>
+                    </td>
 
-                    <tr>
-                        <td><strong>Current Status</strong></td>
-                        <td>${newStatus}</td>
-                    </tr>
+                    <td>
+                        ${pnr}
+                    </td>
+                </tr>
 
-                </table>
+                <tr>
+                    <td>
+                        <strong>Previous Status</strong>
+                    </td>
 
-                <br>
+                    <td>
+                        ${oldStatus}
+                    </td>
+                </tr>
 
-                <p>
-                    Thank you for using Rail Mentor.
-                </p>
+                <tr>
+                    <td>
+                        <strong>Current Status</strong>
+                    </td>
 
-                <hr>
+                    <td>
+                        ${newStatus}
+                    </td>
+                </tr>
 
-                <p style="font-size:12px;color:#666;">
-                    Sanket Phadtare © 2026 Rail Mentor
-                </p>
+            </table>
 
-            </div>
+            <br>
+
+            <p>
+                Thank you for using Rail Mentor.
+            </p>
+
+            <hr>
+
+            <p style="font-size:12px;color:#777;">
+                Sanket Phadtare © 2026 Rail Mentor
+            </p>
+
+        </div>
         `
     });
 
