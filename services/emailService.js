@@ -2,13 +2,33 @@ const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
 
-    service: "gmail",
+    host: "smtp.gmail.com",
+
+    port: 465,
+
+    secure: true,
 
     auth: {
-
         user: process.env.EMAIL_USER,
-
         pass: process.env.EMAIL_PASS
+    }
+
+});
+
+transporter.verify((error, success) => {
+
+    if (error) {
+
+        console.error(
+            "SMTP Error:",
+            error
+        );
+
+    } else {
+
+        console.log(
+            "✅ SMTP Server Ready"
+        );
 
     }
 
@@ -19,7 +39,11 @@ async function sendWelcomeEmail(
     pnr
 ) {
 
-    await transporter.sendMail({
+    console.log(
+        `Attempting to send welcome email to ${email}`
+    );
+
+    const info = await transporter.sendMail({
 
         from: `"Rail Mentor" <${process.env.EMAIL_USER}>`,
 
@@ -40,17 +64,17 @@ async function sendWelcomeEmail(
             </h2>
 
             <p>
-                Thank you for subscribing to PNR status tracking.
+                Thank you for subscribing to PNR Tracking.
             </p>
 
             <p>
-                We are now monitoring your booking.
+                We are now monitoring your ticket.
             </p>
 
             <div style="
+                padding:15px;
                 background:#f5f7fb;
                 border-radius:8px;
-                padding:15px;
                 margin:15px 0;
             ">
 
@@ -60,24 +84,27 @@ async function sendWelcomeEmail(
             </div>
 
             <p>
-                Whenever the ticket status changes,
-                Rail Mentor will automatically send
-                an update email.
+                Any future changes in status
+                will automatically be sent
+                to this email address.
             </p>
 
             <hr>
 
-            <p style="font-size:12px;color:#666;">
+            <p style="font-size:12px;color:#777;">
 
-                Sanket Phadtare © 2026 Rail Mentor
+                Rail Mentor
 
             </p>
 
         </div>
         `
-
     });
 
+    console.log(
+        "✅ Welcome Email Sent:",
+        info.messageId
+    );
 }
 
 async function sendStatusChangeEmail(
@@ -88,11 +115,21 @@ async function sendStatusChangeEmail(
     trainName
 ) {
 
-    console.log("EMAIL DATA");
-    console.log("Previous:", previousStatus);
-    console.log("Current :", currentStatus);
+    console.log("========== EMAIL DATA ==========");
 
-    await transporter.sendMail({
+    console.log(
+        "PREVIOUS:",
+        previousStatus
+    );
+
+    console.log(
+        "CURRENT:",
+        currentStatus
+    );
+
+    console.log("===============================");
+
+    const info = await transporter.sendMail({
 
         from: `"Rail Mentor" <${process.env.EMAIL_USER}>`,
 
@@ -113,7 +150,7 @@ async function sendStatusChangeEmail(
             </h2>
 
             <p>
-                A status change has been detected.
+                Your ticket status has changed.
             </p>
 
             <table
@@ -124,6 +161,7 @@ async function sendStatusChangeEmail(
             >
 
                 <tr>
+
                     <td style="padding:8px;">
                         <strong>Train</strong>
                     </td>
@@ -131,9 +169,11 @@ async function sendStatusChangeEmail(
                     <td style="padding:8px;">
                         ${trainName}
                     </td>
+
                 </tr>
 
                 <tr>
+
                     <td style="padding:8px;">
                         <strong>PNR Number</strong>
                     </td>
@@ -141,26 +181,43 @@ async function sendStatusChangeEmail(
                     <td style="padding:8px;">
                         ${pnr}
                     </td>
+
                 </tr>
 
                 <tr>
+
                     <td style="padding:8px;">
                         <strong>Previous Status</strong>
                     </td>
 
-                    <td style="padding:8px;color:#dc2626;">
+                    <td
+                        style="
+                            padding:8px;
+                            color:#dc2626;
+                            font-weight:bold;
+                        "
+                    >
                         ${previousStatus}
                     </td>
+
                 </tr>
 
                 <tr>
+
                     <td style="padding:8px;">
                         <strong>Current Status</strong>
                     </td>
 
-                    <td style="padding:8px;color:#16a34a;">
+                    <td
+                        style="
+                            padding:8px;
+                            color:#16a34a;
+                            font-weight:bold;
+                        "
+                    >
                         ${currentStatus}
                     </td>
+
                 </tr>
 
             </table>
@@ -173,15 +230,18 @@ async function sendStatusChangeEmail(
 
             <hr>
 
-            <p style="font-size:12px;color:#666;">
-                Sanket Phadtare © 2026 Rail Mentor
+            <p style="font-size:12px;color:#777;">
+                Rail Mentor
             </p>
 
         </div>
         `
-
     });
 
+    console.log(
+        "✅ Status Update Email Sent:",
+        info.messageId
+    );
 }
 
 module.exports = {
