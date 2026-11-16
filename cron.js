@@ -18,7 +18,7 @@ const pool = new Pool({
     }
 });
 
-cron.schedule("0 */3 * * *", async () => {
+cron.schedule("* * * * *", async () => {
 
     console.log("");
     console.log("==================================");
